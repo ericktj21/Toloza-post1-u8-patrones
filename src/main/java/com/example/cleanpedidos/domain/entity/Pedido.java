@@ -25,6 +25,14 @@ public class Pedido {
         this.clienteNombre = clienteNombre;
     }
 
+    // Factory method para reconstruir desde persistencia
+    public static Pedido reconstruir(PedidoId id, String clienteNombre, List<LineaPedido> lineas, EstadoPedido estado) {
+        Pedido pedido = new Pedido(id, clienteNombre);
+        pedido.lineas.addAll(lineas);
+        pedido.estado = estado;
+        return pedido;
+    }
+
     public void agregarLinea(String producto, int cantidad, Dinero precio) {
         if (estado != EstadoPedido.BORRADOR) {
             throw new IllegalStateException("Solo se pueden agregar líneas en estado BORRADOR");

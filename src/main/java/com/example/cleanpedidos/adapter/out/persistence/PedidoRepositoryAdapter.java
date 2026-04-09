@@ -38,31 +38,20 @@ public class PedidoRepositoryAdapter implements PedidoRepositoryPort {
     }
 
     private Pedido toDomain(PedidoJpaEntity entity) {
-        Pedido pedido = new Pedido(new PedidoId(UUID.fromString(entity.getId())), entity.getClienteNombre());
-
-        // Agregar líneas
-        entity.getLineas().forEach(lineaJpa -> {
-            try {
-                pedido.agregarLinea(
+        PedidoId id = new PedidoId(UUID.fromString(entity.getId()));
+        String clienteNombre = entity.getClienteNombre();
+        
+        List<LineaPedido> lineas = entity.getLineas().stream()
+                .map(lineaJpa -> new LineaPedido(
                         lineaJpa.getProductoNombre(),
                         lineaJpa.getCantidad(),
                         new Dinero(lineaJpa.getPrecioUnitario())
-                );
-            } catch (Exception e) {
-                // Silenciar validaciones en restauración
-            }
-        });
-
-        // Restaurar estado (por reflexión)
-        try {
-            java.lang.reflect.Field estadoField = Pedido.class.getDeclaredField("estado");
-            estadoField.setAccessible(true);
-            estadoField.set(pedido, EstadoPedido.valueOf(entity.getEstado().name()));
-        } catch (Exception e) {
-            throw new RuntimeException("Error al restaurar estado del pedido", e);
-        }
-
-        return pedido;
+                ))
+                .toList();
+        
+        EstadoPedido estado = EstadoPedido.valueOf(entity.getEstado().name());
+        
+        return Pedido.reconstruir(id, clienteNombre, lineas, estado);
     }
 
     private PedidoJpaEntity toEntity(Pedido pedido) {
